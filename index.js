@@ -52,27 +52,7 @@ Activity Type
 
 */
 
-const activitiestype = [
-  "Hiking",
-  "Cycling",
-  "Running",
-  "Swimming",
-  "Yoga",
-  "Dance",
-  "Gym",
-  "Football",
-  "Basketball",
-  "Tennis",
-  "Golf",,
-  "Volleyball",
-  "Badminton",
-  "Table Tennis",
-  "Squash",
-  "Bowling",
-  "Pool",
-  "Pub Quiz",
-  "Board Games",
-];
+
 
 
 USERS = 'users';
@@ -296,46 +276,6 @@ app.post("/create-activity", authMiddleware, async (req, res) => {
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 
-activitiestype.forEach((type) => {
-  db.run("INSERT INTO activitytypes (name) VALUES (?)", [type]);
-});
 
 // create 10 fake users and profiles for testing in the database
 
-function createData(){
-  db.run("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", ["Toby", "toby@toby", "password"]);
-  db.run("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", ["John", "john@john", "password"]);
-  db.run("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", ["Jane", "jane@jane", "password"]);
-  db.run("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", ["Alice", "alice@alice", "password"]);
-  db.run("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", ["Bob", "bob@bob", "password"]);
-  
-  db.run("INSERT INTO profiles (user_id, profile_image, bio, location) VALUES (?, ?, ?, ?)", [1, "profile1.jpg", "I like to hike", "London"]);
-  db.run("INSERT INTO profiles (user_id, profile_image, bio, location) VALUES (?, ?, ?, ?)", [2, "profile2.jpg", "I like to cycle", "Manchester"]);
-  db.run("INSERT INTO profiles (user_id, profile_image, bio, location) VALUES (?, ?, ?, ?)", [3, "profile3.jpg", "I like to run", "Birmingham"]);
-  db.run("INSERT INTO profiles (user_id, profile_image, bio, location) VALUES (?, ?, ?, ?)", [4, "profile4.jpg", "I like to swim", "Liverpool"]);
-  db.run("INSERT INTO profiles (user_id, profile_image, bio, location) VALUES (?, ?, ?, ?)", [5, "profile5.jpg", "I like to play football", "Leeds"]);
-  
-  db.run("INSERT INTO activities (user_id, type_id, name, long, lat) VALUES (?, ?, ?, ?, ?)", [1, 1, "Hiking", "51.5074", "0.1278"]);
-  db.run("INSERT INTO activities (user_id, type_id, name, long, lat) VALUES (?, ?, ?, ?, ?)", [2, 2, "Cycling", "53.4808", "2.2426"]);
-  db.run("INSERT INTO activities (user_id, type_id, name, long, lat) VALUES (?, ?, ?, ?, ?)", [3, 3, "Running", "52.4862", "1.8904"]);
-  db.run("INSERT INTO activities (user_id, type_id, name, long, lat) VALUES (?, ?, ?, ?, ?)", [4, 4, "Swimming", "53.4084", "2.9916"]);
-  db.run("INSERT INTO activities (user_id, type_id, name, long, lat) VALUES (?, ?, ?, ?, ?)", [5, 5, "Yoga", "53.4084", "2.9916"]);
-  
-  // Create fake profileactivitytypes for testing in the database
-  db.run("INSERT INTO profileactivitytypes (user_id, type_id) VALUES (?, ?)", [1, 5]);
-  db.run("INSERT INTO profileactivitytypes (user_id, type_id) VALUES (?, ?)", [1, 6]);
-  db.run("INSERT INTO profileactivitytypes (user_id, type_id) VALUES (?, ?)", [1, 7]);
-  db.run("INSERT INTO profileactivitytypes (user_id, type_id) VALUES (?, ?)", [2, 7]);
-  db.run("INSERT INTO profileactivitytypes (user_id, type_id) VALUES (?, ?)", [2, 8]);
-  db.run("INSERT INTO profileactivitytypes (user_id, type_id) VALUES (?, ?)", [3, 9]);
-  db.run("INSERT INTO profileactivitytypes (user_id, type_id) VALUES (?, ?)", [3, 4]);
-  db.run("INSERT INTO profileactivitytypes (user_id, type_id) VALUES (?, ?)", [4, 3]);
-  db.run("INSERT INTO profileactivitytypes (user_id, type_id) VALUES (?, ?)", [4, 1]);
-  db.run("INSERT INTO profileactivitytypes (user_id, type_id) VALUES (?, ?)", [5, 2]);
-  db.run("INSERT INTO profileactivitytypes (user_id, type_id) VALUES (?, ?)", [5, 3]);
-  db.run("INSERT INTO profileactivitytypes (user_id, type_id) VALUES (?, ?)", [5, 4]);
-  
-  
-}
-
-//createData();
