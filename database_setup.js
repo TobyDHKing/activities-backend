@@ -22,6 +22,9 @@ const activitiestype = [
     "Board Games",
 ];
 
+USERS = 'users';
+PROFILES = 'profiles';
+
 const db = new sqlite3.Database("database.sqlite", (err) => {
     if (err) {
       console.error(err.message);
