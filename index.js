@@ -110,40 +110,50 @@ app.get("/profile", authMiddleware, async (req, res) => {
     const userId = req.user.id;
     // write a query to get the profile of the user and join profile table with the profileactivitytypes table to get the activity types
 
-    
+    response = {
+      user_id: userId,
+      profile_image: "",
+      bio: "",
+      location: "",
+      forename: "",
+      surename: "",
+      age: 0,
+      types: [],
+    }
+
     //SELECT * FROM profiles INNER JOIN profileactivitytypes ON profiles.user_id = profileactivitytypes.user_id WHERE profiles.user_id LIKE 2;
     console.log(`SELECT * FROM ${PROFILES} INNER JOIN profileactivitytypes ON profiles.user_id = profileactivitytypes.user_id WHERE profiles.user_id = ` + userId);
-    await db.all(`SELECT * FROM ${PROFILES} INNER JOIN profileactivitytypes ON profiles.user_id = profileactivitytypes.user_id WHERE profiles.user_id = ?`, [userId],
-      function (err, rows) {
+    db.get(`SELECT * FROM ${PROFILES} WHERE profiles.user_id = ?`, [userId], function (err, row) {
+      console.log(row);
+      if (err || !row) {
+        console.error("Sending empty profile");
+        res.json(response)
+        return;
+      }
+      response.profile_image = row.profile_image;
+      response.bio = row.bio;
+      response.location = row.location;
+      response.forename = row.forename;
+      response.surname = row.surname;
+      response.age = row.age;
+
+      console.log("Result");
+      console.log(response);
+
+      db.all(`SELECT * FROM profileactivitytypes WHERE user_id = ?`, [userId], function (err, rows) {
         console.log(rows);
         if (err || rows.length === 0) {
-          console.error("Sending empty profile");
-          res.json({
-            user_id: userId,
-            profile_image: "",
-            bio: "",
-            location: "",
-            forename: "",
-            surename: "",
-            age: 0,
-            types: [],
-          })
-        } else {
-          for (let i = 0; i < rows.length; i++) {
-            if (rows[i].user_id === userId) {
-              rows[i].types = [];
-              for (let j = 0; j < rows.length; j++) {
-                if (rows[j].user_id === userId) {
-                  rows[i].types.push(rows[j].type_id);
-                }
-              }
-            }
-          }
-          console.log("Result");
-          console.log(rows);
-          res.json(rows);
+          console.log("No activity types found");
+          res.json(response)
+          return;
         }
-      }
+        for (let i = 0; i < rows.length; i++) {
+          response.types.push(rows[i].type_id);
+        }
+        console.log("Result");
+        console.log(response);
+        res.json(response);
+      });}
     );
   } catch (err) {
     res.status(400).json({ message: "Error getting profile", error: err });
@@ -157,11 +167,12 @@ app.post("/update-profile", authMiddleware, async (req, res) => {
     const { profile_image, bio, location, forename, surname, age, types } = req.body;
     console.log(profile_image, bio, location, forename, surname, age, types);
     db.run("UPDATE profiles SET profile_image = ?, bio = ?, location = ?, forename = ?, surname = ?, age = ? WHERE user_id = ?", [profile_image, bio, location, forename, surname, age, userId]);
-    db.run("DELETE FROM profileactivitytypes WHERE user_id = ?", [userId]);
-    for (let i = 0; i < types.length; i++) {
-      console.log("Inserting profileactivitytypes");
-      db.run("INSERT INTO profileactivitytypes (user_id, type_id) VALUES (?, ?)", [userId, types[i]]);
-    }
+    db.run("DELETE FROM profileactivitytypes WHERE user_id = ?", [userId], function(err) {
+      for (let i = 0; i < types.length; i++) {
+        console.log("Inserting profileactivitytypes");
+        db.run("INSERT INTO profileactivitytypes (user_id, type_id) VALUES (?, ?)", [userId, types[i]]);
+      }
+    });
     console.log("Profile updated successfully");
     res.json({ message: "Profile updated successfully" });
   } catch (err) {
