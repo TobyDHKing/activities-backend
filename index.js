@@ -1,17 +1,31 @@
-const express = require("express");
-const sqlite3 = require("sqlite3").verbose();
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const cors = require("cors");
-require("dotenv").config();
+import express from "express";
+
+import sqlite3 from "sqlite3";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import cors from "cors";
+import * as httpServer from "http"; 
+import dotenv from "dotenv";
+import setupSocket from "./websocket.js";
+import { Socket } from "socket.io";
+dotenv.config();
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = "TOBY_ACTIVITIES_SECRET";
+export const JWT_SECRET = "TOBY_ACTIVITIES_SECRET";
+const httpServer2 = httpServer.createServer(app);
+
+console.log("Websocket server started");
 
 app.use(express.json());
 app.use(cors());
 
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+const io = setupSocket(server);
 // DATA STRUCTURES
 /*
 User 
@@ -52,14 +66,8 @@ Activity Type
 
 */
 
-
-
-
-USERS = 'users';
-PROFILES = 'profiles';
-
-
-
+const USERS = 'users';
+const PROFILES = 'profiles';
 
 const db = new sqlite3.Database("database.sqlite", (err) => {
   if (err) {
@@ -73,9 +81,11 @@ const db = new sqlite3.Database("database.sqlite", (err) => {
     db.run(`CREATE TABLE IF NOT EXISTS ${PROFILES} (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, profile_image TEXT, bio TEXT, location TEXT, forename TEXT, surname TEXT, age INTEGER, FOREIGN KEY(user_id) REFERENCES ${USERS}(id))`);
 
     db.run('CREATE TABLE IF NOT EXISTS profileactivitytypes (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, type_id INTEGER, FOREIGN KEY(user_id) REFERENCES users(id), FOREIGN KEY(type_id) REFERENCES activitytypes(id))');
-
+    
     db.run(`CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY AUTOINCREMENT, activity_id INTEGER, FOREIGN KEY(activity_id) REFERENCES activities(id))`);
     
+    db.run(`CREATE TABLE IF NOT EXISTS chatusers (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id INTEGER, user_id INTEGER, FOREIGN KEY(chat_id) REFERENCES chats(id), FOREIGN KEY(user_id) REFERENCES ${USERS}(id))`);
+
     db.run(`CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id INTEGER, user_id INTEGER, text TEXT, date TEXT, time TEXT, read BOOLEAN, FOREIGN KEY(chat_id) REFERENCES chats(id), FOREIGN KEY(user_id) REFERENCES ${USERS}(id))`);
   
     db.run(`CREATE TABLE IF NOT EXISTS activitytypes (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`);
@@ -91,7 +101,7 @@ const db = new sqlite3.Database("database.sqlite", (err) => {
 //   return rows[0];
 // }
 
-const authMiddleware = async (req, res, next) => {
+export const authMiddleware = async (req, res, next) => {
 
   //if (!token) return res.status(401).json({ message: "Access Denied" });
   try {
@@ -284,9 +294,122 @@ app.post("/create-activity", authMiddleware, async (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.get("/get-my-activities", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    console.log(userId);
+    db.all("SELECT * FROM activities WHERE user_id = ?", [userId], function (err, rows) {
+      if (err) {
+        console.error(err);
+        res.status(500).json({ message: "Error getting activities", error: err });
+      } else {
+        console.log(rows);
+        res.json(rows);
+      }
+    });
+  } catch (err) {
+    res.status(400).json({ message: "Error getting activities", error: err });
+  }
+}
+);
+
+// export type MessagesStruct = {
+//   id: number;
+//   user_id: number;
+//   name: string;
+//   chat_id: number;
+//   text: string;
+//   date: string;
+//   time: string;
+//   read: boolean;
+// }
+
+app.post("/send-message", authMiddleware, async (req, res) => {
+  try {
+    const { chat_id, message } = req.body;
+    const userId = req.user.id;
+    console.log(chat_id, message);
+    // check if the chat exists and the user is in the chat
+    db.get("SELECT * FROM chatusers WHERE chat_id = ? AND user_id = ?", [chat_id, userId], function (err, row) {
+      if (err || !row) {
+        console.error("Chat not found or user not in chat");
+        return res.status(400).json({ message: "Chat not found or user not in chat" });
+      }
+      else {
+        db.run("INSERT INTO messages (chat_id, user_id, text) VALUES (?, ?, ?)", [chat_id, userId, message]);
+        let id = 0;
+        try{
+          io.emit("message", {
+            id: id,
+            user_id: userId,
+            name: "name",
+            chat_id: chat_id,
+            text: message,
+            date: new Date().toLocaleDateString(),
+            time: new Date().toLocaleTimeString(),
+            read: false
+          });
+        } catch (emitError) {
+          console.error("Error emitting message:", emitError);
+        }
+        res.json({ message: "Message sent successfully" });
+      }
+    });
+  } catch (err) {
+    res.status(400).json({ message: "Error sending message", error: err });
+  }
+});
+
+app.get("/get-messages", authMiddleware, async (req, res) => {
+  try {
+    const { chat_id } = req.query;
+    console.log(chat_id);
+    // check if the chat exists and the user is in the chat using the chatusers table
+    db.get("SELECT * FROM chatusers WHERE chat_id = ? AND user_id = ?", [chat_id, req.user.id], function (err, row) {
+      if (err || !row) {
+        console.error("Chat not found or user not in chat");
+        return res.status(400).json({ message: "Chat not found or user not in chat" });
+      }
+    });
+    db.all("SELECT * FROM messages WHERE chat_id = ?", [chat_id], function (err, rows) {
+      if (err) {
+        console.error(err);
+        res.status(500).json({ message: "Error getting messages", error: err });
+      } else {
+        res.json(rows);
+      }
+    });
+  } catch (err) {
+    res.status(400).json({ message: "Error getting messages", error: err });
+  }
+});
+
+app.get("/get-chats", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    console.log(userId);
+    //
+    db.all("select * from (select chat_id, user_id from chatusers where chat_id in (SELECT chat_id FROM chatusers where user_id = ?)) chats JOIN (SELECT name, id FROM activities) a on a.id = chats.chat_id where user_id != ?", [userId,userId], function (err, rows) {
+      if (err) {
+        console.error(err);
+        res.status(500).json({ message: "Error getting chats", error: err });
+      } else {
+        console.log(rows);
+        res.json(rows);
+
+      }
+    });
+    // then use the rows to get the users in the chats using the chatusers table
+    // reply with the data in the format of { chat_id: [user_id1, user_id2, ...] }
+
+
+  } catch (err) {
+    res.status(400).json({ message: "Error getting chats", error: err });
+  }
+});
 
 
 
-// create 10 fake users and profiles for testing in the database
+// run websocket.js
+//after the server is started
 

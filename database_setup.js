@@ -37,9 +37,10 @@ const db = new sqlite3.Database("database.sqlite", (err) => {
       db.run(`CREATE TABLE IF NOT EXISTS ${PROFILES} (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, profile_image TEXT, bio TEXT, location TEXT, forename TEXT, surname TEXT, age INTEGER, FOREIGN KEY(user_id) REFERENCES ${USERS}(id))`);
   
       db.run('CREATE TABLE IF NOT EXISTS profileactivitytypes (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, type_id INTEGER, FOREIGN KEY(user_id) REFERENCES users(id), FOREIGN KEY(type_id) REFERENCES activitytypes(id))');
-  
       db.run(`CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY AUTOINCREMENT, activity_id INTEGER, FOREIGN KEY(activity_id) REFERENCES activities(id))`);
       
+      db.run(`CREATE TABLE IF NOT EXISTS chatusers (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id INTEGER, user_id INTEGER, FOREIGN KEY(chat_id) REFERENCES chats(id), FOREIGN KEY(user_id) REFERENCES ${USERS}(id))`);
+
       db.run(`CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id INTEGER, user_id INTEGER, text TEXT, date TEXT, time TEXT, read BOOLEAN, FOREIGN KEY(chat_id) REFERENCES chats(id), FOREIGN KEY(user_id) REFERENCES ${USERS}(id))`);
     
       db.run(`CREATE TABLE IF NOT EXISTS activitytypes (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`);
@@ -84,6 +85,25 @@ function createData(){
     db.run("INSERT INTO profileactivitytypes (user_id, type_id) VALUES (?, ?)", [5, 2]);
     db.run("INSERT INTO profileactivitytypes (user_id, type_id) VALUES (?, ?)", [5, 3]);
     db.run("INSERT INTO profileactivitytypes (user_id, type_id) VALUES (?, ?)", [5, 4]);
-}
-  
+  // Create fake chats for testing in the database and messages
+    db.run("INSERT INTO chats (activity_id) VALUES (?)", [1]);
+    db.run("INSERT INTO chats (activity_id) VALUES (?)", [2]);
+    db.run("INSERT INTO chats (activity_id) VALUES (?)", [3]);
+    db.run("INSERT INTO chats (activity_id) VALUES (?)", [4]);
+    db.run("INSERT INTO chats (activity_id) VALUES (?)", [5]);
+
+    db.run("INSERT INTO chatusers (chat_id, user_id) VALUES (?, ?)", [1, 1]);
+    db.run("INSERT INTO chatusers (chat_id, user_id) VALUES (?, ?)", [1, 2]);
+    db.run("INSERT INTO chatusers (chat_id, user_id) VALUES (?, ?)", [2, 3]);
+    db.run("INSERT INTO chatusers (chat_id, user_id) VALUES (?, ?)", [2, 4]);
+    db.run("INSERT INTO chatusers (chat_id, user_id) VALUES (?, ?)", [3, 5]);
+    db.run("INSERT INTO chatusers (chat_id, user_id) VALUES (?, ?)", [3, 1]);
+
+    db.run("INSERT INTO messages (chat_id, user_id, text, date, time, read) VALUES (?, ?, ?, ?, ?, ?)", [1, 1, "Hello", "2023-10-01", "10:00", 0]);
+    db.run("INSERT INTO messages (chat_id, user_id, text, date, time, read) VALUES (?, ?, ?, ?, ?, ?)", [1, 2, "Hi", "2023-10-01", "10:01", 0]);
+    db.run("INSERT INTO messages (chat_id, user_id, text, date, time, read) VALUES (?, ?, ?, ?, ?, ?)", [2, 3, "How are you?", "2023-10-01", "10:02", 0]);
+    db.run("INSERT INTO messages (chat_id, user_id, text, date, time, read) VALUES (?, ?, ?, ?, ?, ?)", [2, 4, "Good", "2023-10-01", "10:03", 0]);
+    db.run("INSERT INTO messages (chat_id, user_id, text, date, time, read) VALUES (?, ?, ?, ?, ?, ?)", [3, 5, "Great!", "2023-10-01", "10:04", 0]);
+  }
+
 createData();
