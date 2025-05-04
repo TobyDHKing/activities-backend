@@ -2,7 +2,7 @@ import { Server } from "socket.io";
 import {authMiddleware, JWT_SECRET} from "./index.js";
 import jwt from "jsonwebtoken";
 
- 
+export const userSockets = new Map(); // Store connected users
 
 export default function setupSocket(server) {
     const io = new Server(server, {
@@ -33,11 +33,18 @@ export default function setupSocket(server) {
         socket.on("disconnect", () => {
             console.log("User disconnected", socket.id);
         });
+        userSockets.set(socket.id, socket.user); // Store user info in the map
         // socket.on("message", (data) => {
         //     io.to(data.room).emit("message", data);
         //     console.log(`Message sent to room ${data.room}: ${data.message}`);
         // });
+
     });
+    io.on("disconnect", (socket) => {
+        console.log("User disconnected", socket.id);
+        userSockets.delete(socket.id); // Remove user info from the map
+    });
+    
     return io;
 }
 

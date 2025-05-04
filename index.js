@@ -9,6 +9,7 @@ import dotenv from "dotenv";
 import setupSocket from "./websocket.js";
 import { Socket } from "socket.io";
 dotenv.config();
+import {userSockets} from "./websocket.js";
 
 
 const app = express();
@@ -238,7 +239,7 @@ app.post("/signup", async (req, res) => {
           function (err) {
             const token = jwt.sign({ id: this.lastID }, JWT_SECRET, { expiresIn: "1h" });
             db.run("INSERT INTO profiles (user_id, profile_image, bio, location, forename, surname, age) VALUES (?, ?, ?, ?, ?, ? ,?)", [this.lastID, "", "", "","","", 0]);
-            res.json(token);
+            res.json({ token: token, id: this.lastID });
           }
         );
       }
@@ -266,7 +267,7 @@ app.post("/login", async (req, res) => {
           return res.status(400).json({  success: 'false' });
         }
         const token = jwt.sign({ id: row.id }, JWT_SECRET, { expiresIn: "1h" });
-        res.json({ token });
+        res.json({ token: token, userId: row.id });
       }
     );
   } catch (err) {
@@ -338,16 +339,27 @@ app.post("/send-message", authMiddleware, async (req, res) => {
       else {
         db.run("INSERT INTO messages (chat_id, user_id, text) VALUES (?, ?, ?)", [chat_id, userId, message]);
         let id = 0;
-        try{
-          io.emit("message", {
-            id: id,
-            user_id: userId,
-            name: "name",
-            chat_id: chat_id,
-            text: message,
-            date: new Date().toLocaleDateString(),
-            time: new Date().toLocaleTimeString(),
-            read: false
+        try{// send to only the users in the chat
+          db.get("SELECT id FROM messages WHERE chat_id = ? AND user_id = ? AND text = ?", [chat_id, userId, message], function (err, row) {
+            if (err) {
+              console.error(err);
+              return res.status(500).json({ message: "Error getting message id", error: err });
+            } else {
+              for (let i = 0; i < row.length; i++) {
+                id = row.id;
+                console.log("Message sent to socket");
+                io.emit("message", {
+                  id: id,
+                  user_id: userId,
+                  name: "name",
+                  chat_id: chat_id,
+                  text: message,
+                  date: new Date().toLocaleDateString(),
+                  time: new Date().toLocaleTimeString(),
+                  read: false
+                },userSockets.get(userId).socket.id);
+              }
+            } 
           });
         } catch (emitError) {
           console.error("Error emitting message:", emitError);
@@ -388,8 +400,21 @@ app.get("/get-chats", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
     console.log(userId);
-    //
-    db.all("select * from (select chat_id, user_id from chatusers where chat_id in (SELECT chat_id FROM chatusers where user_id = ?)) chats JOIN (SELECT name, id FROM activities) a on a.id = chats.chat_id where user_id != ?", [userId,userId], function (err, rows) {
+    //cancer....
+    db.all(`
+        SELECT chat_id, GROUP_CONCAT(forename), id, name FROM (
+            SELECT chat_id, user_id FROM chatusers WHERE chat_id in (
+                SELECT chat_id FROM chatusers WHERE user_id = ?
+            ) and user_id != ?
+        ) chatsAndUsers, (
+            SELECT chats.id, name FROM chats, (
+                SELECT id, name FROM activities
+            ) a WHERE a.id = chats.activity_id
+        ) chatsAndActivity, (
+            SELECT user_id, forename FROM profiles
+        ) userAndName WHERE chatsAndUsers.chat_id = chatsAndActivity.id and chatsAndUsers.user_id = userAndName.user_id;
+        `,
+        [userId,userId,], function (err, rows) {
       if (err) {
         console.error(err);
         res.status(500).json({ message: "Error getting chats", error: err });
