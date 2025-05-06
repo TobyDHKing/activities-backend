@@ -4,6 +4,11 @@ import jwt from "jsonwebtoken";
 
 export const userSockets = new Map(); // Store connected users
 
+function createUniqueID(userId) {
+    // Create a unique ID for the user based on their ID and current timestamp
+    return `${userId}-${Date.now()}`;
+}   
+
 export default function setupSocket(server) {
     const io = new Server(server, {
         cors: {
@@ -33,7 +38,8 @@ export default function setupSocket(server) {
         socket.on("disconnect", () => {
             console.log("User disconnected", socket.id);
         });
-        userSockets.set(socket.id, socket.user); // Store user info in the map
+        userSockets.set(socket.user.id, socket.id); // Store user info in the map
+        console.log("Connected users:", Array.from(userSockets.values()));
         // socket.on("message", (data) => {
         //     io.to(data.room).emit("message", data);
         //     console.log(`Message sent to room ${data.room}: ${data.message}`);
