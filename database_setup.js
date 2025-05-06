@@ -67,11 +67,11 @@ function createData(){
     db.run("INSERT INTO profiles (user_id, forename, profile_image, bio, age, location, profile_colour) VALUES (?, ?, ?, ?, ?, ?, ?)", [3, "Jane", "profile3.jpg", "I like to run", 28, "Birmingham", "#FF5733"]);
     db.run("INSERT INTO profiles (user_id, forename, profile_image, bio, age, location, profile_colour) VALUES (?, ?, ?, ?, ?, ?, ?)", [4, "Alice", "profile4.jpg", "I like to swim", 32, "Liverpool", "#FF5733"]);
     db.run("INSERT INTO profiles (user_id, forename, profile_image, bio, age, location, profile_colour) VALUES (?, ?, ?, ?, ?, ?, ?)", [5, "Bob", "profile5.jpg", "I like to play football", 27, "Leeds", "#FF5733"]);
-    db.run("INSERT INTO activities (user_id, type_id, name, long, lat, date_mode, group_size, radius) VALUES (?, ?, ?, ?, ?, ?, ?)", [1, 1, "Hiking", "51.5074", "0.1278", true, 2, 5000]);
-    db.run("INSERT INTO activities (user_id, type_id, name, long, lat, date_mode, group_size, radius) VALUES (?, ?, ?, ?, ?, ?, ?)", [2, 2, "Cycling", "53.4808", "2.2426", false, 5, 5000]);
-    db.run("INSERT INTO activities (user_id, type_id, name, long, lat, date_mode, group_size, radius) VALUES (?, ?, ?, ?, ?, ?, ?)", [3, 3, "Running", "52.4862", "1.8904", true, 2, 5000]);
-    db.run("INSERT INTO activities (user_id, type_id, name, long, lat, date_mode, group_size, radius) VALUES (?, ?, ?, ?, ?, ?, ?)", [4, 4, "Swimming", "53.4084", "2.9916", false, 10, 5000]);
-    db.run("INSERT INTO activities (user_id, type_id, name, long, lat, date_mode, group_size, radius) VALUES (?, ?, ?, ?, ?, ?, ?)", [5, 5, "Yoga", "53.4084", "2.9916", true, 2, 5000]);
+    db.run("INSERT INTO activities (user_id, type_id, name, long, lat, date_mode, group_size, radius) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [1, 1, "Hiking", "51.5074", "0.1278", true, 2, 5000]);
+    db.run("INSERT INTO activities (user_id, type_id, name, long, lat, date_mode, group_size, radius) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [2, 2, "Cycling", "53.4808", "2.2426", false, 5, 5000]);
+    db.run("INSERT INTO activities (user_id, type_id, name, long, lat, date_mode, group_size, radius) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [3, 3, "Running", "52.4862", "1.8904", true, 2, 5000]);
+    db.run("INSERT INTO activities (user_id, type_id, name, long, lat, date_mode, group_size, radius) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [4, 4, "Swimming", "53.4084", "2.9916", false, 10, 5000]);
+    db.run("INSERT INTO activities (user_id, type_id, name, long, lat, date_mode, group_size, radius) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [5, 5, "Yoga", "53.4084", "2.9916", true, 2, 5000]);
 
     // Create fake profileactivitytypes for testing in the database
     db.run("INSERT INTO profileactivitytypes (user_id, type_id) VALUES (?, ?)", [1, 5]);
