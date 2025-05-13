@@ -96,49 +96,6 @@ function recomendActivities(activities, userId){
   }
 }
 
-
-
-
-// DATA STRUCTURES
-/*
-User 
-  - id: bumber
-  - name: string
-  - email: string
-  - password: string
-Activity
-  - id: bumber
-  - name: string
-  - description: string
-  - date: string
-  - time: string
-  - location: string
-  - user: User
-  - participants: User[]
-  - chats: Chat[]
-Profile
-  - user: User
-  - profileImage: string
-  - bio: string
-  - location: string
-
-Chat 
-  - id: bumber
-  - users: User[]
-  - activity: activity
-Message
-  - id: bumber
-  - text: string
-  - user: User
-  - chat: Chat
-  - date: string
-  - time: string
-  - read: boolean
-
-Activity Type
-
-*/
-
 const USERS = 'users';
 const PROFILES = 'profiles';
 
@@ -202,7 +159,7 @@ app.get("/profile", authMiddleware, async (req, res) => {
   }
   try {
     db.get(`SELECT * FROM ${PROFILES} WHERE profiles.user_id = ?`, [userId], function (err, row) {
-      console.log(row);
+      
       if (err || !row) {
         console.error("Sending empty profile");
         res.json(response)
@@ -217,7 +174,7 @@ app.get("/profile", authMiddleware, async (req, res) => {
       response.types = [];
 
       db.all(`SELECT * FROM profileactivitytypes WHERE user_id = ?`, [userId], function (err, rows) {
-        console.log(rows);
+
         if (err || rows.length === 0) {
           console.log("No activity types found");
           res.json(response)
@@ -239,7 +196,6 @@ app.post("/update-profile", authMiddleware, async (req, res) => {
     const userId = req.user.id;
     console.log(userId);
     const { profile_image, bio, location, forename, surname, age, types } = req.body;
-    console.log(profile_image, bio, location, forename, surname, age, types);
     const color = generateRandomColor();
     db.run("UPDATE profiles SET profile_image = ?, bio = ?, location = ?, forename = ?, surname = ?, age = ?, profile_colour = ? WHERE user_id = ?", [profile_image, bio, location, forename, surname, age, color, userId]);
     db.run("DELETE FROM profileactivitytypes WHERE user_id = ?", [userId], function(err) {
@@ -272,13 +228,7 @@ function isPopulated(value){
 app.get("/activities", async (req, res) => {
   console.log("Getting activities");
   const { selectedTypes, startDate, endDate, dateMode, long, lat, radius } = req.query;
-  console.log("Selected types: ", selectedTypes);
-  console.log("Start date: ", startDate);
-  console.log("End date: ", endDate);
-  console.log("Date mode: ", dateMode);
-  console.log("Long: ", long);
-  console.log("Lat: ", lat);
-  console.log("Radius: ", radius);
+
   let query = `SELECT * FROM activities 
     LEFT JOIN (SELECT id as typeid, name AS type_name FROM activitytypes) types ON activities.type_id = types.typeid 
     LEFT JOIN  (SELECT user_id, profile_image, bio, forename, location  from profiles ) profile ON activities.user_id = profile.user_id
@@ -332,15 +282,12 @@ app.get("/activitiestype", async (req, res) => {
 
 app.post("/signup", async (req, res) => {
   // cheack if the user already exists
-
-  console.log(req.body);
   try {
     db.get(`SELECT * FROM ${USERS} WHERE email = ?`, [req.body.email], async function (err, row) {
       if (row) {
         return res.status(400).json({ success: 'false', error: "User already exists" });
       }else{
         const { name, email, password } = req.body;
-        console.log(name, email, password);
         const hashedPassword = await bcrypt.hash(password, 10);
     
         
@@ -372,9 +319,7 @@ app.post("/login", async (req, res) => {
           console.log("errored Login")
           return res.status(400).json({success:'false' });
         }
-        console.log(row)
         if (err && row || !(await bcrypt.compare(password, row.password))) {
-          console.log("Failed Password stuff")
           return res.status(400).json({  success: 'false' });
         }
         const token = jwt.sign({ id: row.id }, JWT_SECRET, { expiresIn: "1h" });
@@ -389,7 +334,6 @@ app.post("/login", async (req, res) => {
 app.post("/create-activity", authMiddleware, async (req, res) => {
   try {
     const {name, type, long, lat, radius, date_mode, group_size } = req.body;
-    console.log(name, type, long, lat , radius, date_mode, group_size);
     if (date_mode == "true") { group_size = 2; };
     
     const userId = req.user.id;
@@ -416,7 +360,6 @@ app.post("/delete-activity", authMiddleware, async (req, res) => {
   try {
     const { activity_id } = req.body;
     const userId = req.user.id;
-    console.log(activity_id);
     db.run("DELETE FROM activities WHERE id = ? AND user_id = ?", [activity_id, userId], function (err) {
       if (err) {
         console.error(err);
@@ -473,7 +416,6 @@ app.post("/delete-activity", authMiddleware, async (req, res) => {
 app.get("/get-my-activities", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
-    console.log(userId);
     db.all("SELECT * FROM activities WHERE user_id = ?", [userId], function (err, rows) {
       if (err) {
         console.error(err);
@@ -492,7 +434,6 @@ app.get("/get-my-activities", authMiddleware, async (req, res) => {
 app.get("/get-recommended-activities", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
-    console.log(userId);
     db.all("SELECT * FROM activities LEFT JOIN (SELECT id, name AS type_name FROM activitytypes) types ON activities.type_id = types.id LEFT JOIN profiles ON activities.user_id = profiles.user_id WHERE activities.id IN (SELECT activity_id FROM recommendations WHERE user_id = ?)", [userId], function (err, rows) {
       if (err) {
         console.error(err);
