@@ -161,7 +161,7 @@ app.get("/profile", authMiddleware, async (req, res) => {
     db.get(`SELECT * FROM ${PROFILES} WHERE profiles.user_id = ?`, [userId], function (err, row) {
       
       if (err || !row) {
-        console.error("Sending empty profile");
+        console.log("Sending empty profile");
         res.json(response)
         return;
       }
